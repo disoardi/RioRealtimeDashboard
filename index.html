@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Rio2016 Real Time Map</title>
+        <meta name="viewport" content="initial-scale=1.0">
+        <meta charset="utf-8">
+        <!-- Load jQuery from Google's CDN -->
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+        <!-- Source our javascript file with the jQUERY code -->
+        <script src="/js/menu_script.js"></script>
+        <link rel="/css/style.css" href="style.css" />
+        <script src="/socket.io/socket.io.js"></script>
+        <link rel='favicon' type='image/x-icon' href='/images/favicon.ico' />
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            #map {
+                height: 100%;
+            }
+            body #map .titleInfoWindow{
+                display: block;
+                float: ;
+                width: 100%;
+                margin-bottom: 5px;
+                font-weight: bold;
+                color: #08487a;
+                font-size: 13px;
+            }
+            body #map .contentInfoWindow{
+                font-size: 13px;
+                color: rgba(0,0,0,0.8);
+            }
+            h1 {
+               font-family: Helvetica;
+               font-weight: 100;
+            }
+            body {
+               color:#333;
+               text-align:center;
+               font-family: arial;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script>
+            function cutString(stringToCut, size) {
+                var newString = stringToCut;
+                var maxChar = !size ? 20 : size;
+                var length = stringToCut.length;
+                if (length > maxChar) {
+                    newString = stringToCut.substring(0, maxChar - 1) + "...";
+                }
+                return newString;
+            }
+            var socket = io.connect('http://isoardi.org:8089');
+            function initMap() {
+                var map = new google.maps.Map(document.getElementById('map'), {
+                    zoom: 4,
+                    center:new google.maps.LatLng(25, 0) 
+                });
+                socket.on('message', function (data){
+                    var date = data.Unixtime;
+                    var countryCode = data.CountryCode;
+                    var tweet = data.Message;
+                    var user = data.Username;
+                    var coords = data.GPS_point.split(",")
+                    var latLng = new google.maps.LatLng(parseFloat(coords[0]),parseFloat(coords[1])); 
+                    var marker = new google.maps.Marker({
+                       position: latLng,
+                       title: user,
+                       icon: new google.maps.MarkerImage('/images/marker.png',
+                       null, /* size is determined at runtime */
+                       null, /* origin is 0,0 */
+                       null, /* anchor is bottom center of the scaled image */
+                       new google.maps.Size(45, 45))
+                    });
+                    marker.setMap(map);
+                    var infoText = "<h1 class='titleInfoWindow'>" + date + " - " + user + "</h1><div class='contentInfoWindow'>" + cutString(tweet, 100) + "</div>";
+                    var infowindow = new google.maps.InfoWindow({
+                        content: infoText   
+                    });
+                    infowindow.open(map, marker);
+                    marker.addListener('click', function() {
+                        infowindow.open(map, marker);
+                    });
+                    setTimeout(function(){
+                        infowindow.close();
+                    }, 3000);
+                   setTimeout(function(){
+                       marker.setMap(null);
+                   }, 60000);
+                });
+            }
+        </script>
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIsg4fpy_l_Zz9SI2AbAGWNc75uujzGis&callback=initMap"
+        async defer></script>
+    </body>
+</html>
